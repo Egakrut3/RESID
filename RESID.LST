@@ -1,0 +1,570 @@
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 1
+resid.asm
+
+
+
+      1	0000			     .model tiny
+      2
+      3	0000			     .code
+      4				     locals @@
+      5				     org 100h
+      6
+      7	0100			     Start:
+      8	0100  E9 026C				     jmp Init
+      9
+     10				     ;-------------------------------------------------------
+     11	      =0050		     ScrW	     equ 80d
+     12
+     13	      =0036		     ScnCode	     equ 36h
+     14	      =0005		     FLn	     equ 5
+     15	      =000A		     Color	     equ 00001010b		     ;Light green
+     16	      =00CD		     HFrm	     equ 0CDh			     ;Í
+     17	      =00BA		     VFrm	     equ 0BAh			     ;º	     ÉÍ»
+     18	      =00C9		     LTFrm	     equ 0C9h			     ;É	     º º
+     19	      =00BB		     RTFrm	     equ 0BBh			     ;»	     ÈÍ¼
+     20	      =00C8		     LBFrm	     equ 0C8h			     ;È
+     21	      =00BC		     RBFrm	     equ 0BCh			     ;¼
+     22
+     23	0103			     NewInt	     proc
+     24	0103  FA				     cli
+     25	0104  55				     push BP
+     26	0105  8B EC				     mov BP, SP
+     27
+     28	0107  50				     push AX
+     29	0108  53				     push BX
+     30	0109  51				     push CX
+     31	010A  52				     push DX
+     32	010B  56				     push SI
+     33	010C  57				     push DI
+     34	010D  1E				     push DS
+     35	010E  06				     push ES
+     36
+     37	010F  8C C8				     mov AX, CS
+     38	0111  8E D8				     mov DS, AX
+     39	0113  8E C0				     mov ES, AX
+     40
+     41	0115  E4 60				     in	AL, 60h
+     42	0117  3C 36				     cmp AL, ScnCode
+     43						     ;cmp [BP -	2], 1111h
+     44	0119  74 03				     je	@@Skip
+     45	011B  E9 00A2				     jmp @@Exit
+     46
+     47	011E  FD			     @@Skip: std
+     48
+     49	011F  8B 56 FE				     mov DX, [BP - 2]			     ;AX
+     50	0122  BF 01DBr				     mov DI, offset TableAXFrmt	+ 6
+     51	0125  E8 0114				     call StoreHex
+     52
+     53	0128  8B 56 FC				     mov DX, [BP - 4]			     ;BX
+     54	012B  BF 01E3r				     mov DI, offset TableBXFrmt	+ 6
+     55	012E  E8 010B				     call StoreHex
+     56
+     57	0131  8B 56 FA				     mov DX, [BP - 6]			     ;CX
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 2
+resid.asm
+
+
+
+     58	0134  BF 01EBr				     mov DI, offset TableCXFrmt	+ 6
+     59	0137  E8 0102				     call StoreHex
+     60
+     61	013A  8B 56 F8				     mov DX, [BP - 8]			     ;DX
+     62	013D  BF 01F3r				     mov DI, offset TableDXFrmt	+ 6
+     63	0140  E8 00F9				     call StoreHex
+     64
+     65	0143  8B 56 F6				     mov DX, [BP - 10d]			     ;SI
+     66	0146  BF 01FBr				     mov DI, offset TableSIFrmt	+ 6
+     67	0149  E8 00F0				     call StoreHex
+     68
+     69	014C  8B 56 F4				     mov DX, [BP - 12d]			     ;DI
+     70	014F  BF 0203r				     mov DI, offset TableDIFrmt	+ 6
+     71	0152  E8 00E7				     call StoreHex
+     72
+     73	0155  8B D4				     mov DX, SP
+     74	0157  83 C2 18				     add DX, 2 * 12d			     ;SP differs by 12 words
+     75	015A  BF 020Br				     mov DI, offset TableSPFrmt	+ 6	     ;from the correct one now
+     76	015D  E8 00DC				     call StoreHex
+     77
+     78	0160  8B 56 00				     mov DX, [BP]			     ;BP
+     79	0163  BF 0213r				     mov DI, offset TableBPFrmt	+ 6
+     80	0166  E8 00D3				     call StoreHex
+     81
+     82	0169  8B 56 04				     mov DX, [BP + 4]			     ;Initial CS located there
+     83	016C  BF 021Br				     mov DI, offset TableCSFrmt	+ 6
+     84	016F  E8 00CA				     call StoreHex
+     85
+     86	0172  8C D2				     mov DX, SS
+     87	0174  BF 0223r				     mov DI, offset TableSSFrmt	+ 6
+     88	0177  E8 00C2				     call StoreHex
+     89
+     90	017A  8B 56 F2				     mov DX, [BP - 14d]			     ;DS
+     91	017D  BF 022Br				     mov DI, offset TableDSFrmt	+ 6
+     92	0180  E8 00B9				     call StoreHex
+     93
+     94	0183  8B 56 F0				     mov DX, [BP - 16d]			     ;ES
+     95	0186  BF 0233r				     mov DI, offset TableESFrmt	+ 6
+     96	0189  E8 00B0				     call StoreHex
+     97
+     98	018C  8B 56 02				     mov DX, [BP + 2]			     ;Initial IP located there
+     99	018F  BF 023Br				     mov DI, offset TableIPFrmt	+ 6
+    100	0192  E8 00A7				     call StoreHex
+    101
+    102	0195  B4 0A				     mov AH, Color
+    103	0197  B9 0067				     mov CX, 8 * 13d - 1
+    104	019A  BE 01D5r				     mov SI, offset TableAXFrmt
+    105	019D  BF 0320				     mov DI, 2 * (FLn *	ScrW)
+    106	01A0  BB B800				     mov BX, 0B800h
+    107	01A3  8E C3				     mov ES, BX
+    108	01A5  FC				     cld
+    109	01A6  B6 BC				     mov DH, RBFrm
+    110	01A8  B2 CD				     mov DL, HFrm
+    111	01AA  52				     push DX
+    112	01AB  B6 C8				     mov DH, LBFrm
+    113	01AD  B2 BA				     mov DL, VFrm
+    114	01AF  52				     push DX
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 3
+resid.asm
+
+
+
+    115	01B0  B6 BA				     mov DH, VFrm
+    116	01B2  B2 BB				     mov DL, RTFrm
+    117	01B4  52				     push DX
+    118	01B5  B6 CD				     mov DH, HFrm
+    119	01B7  B2 C9				     mov DL, LTFrm
+    120	01B9  52				     push DX
+    121	01BA  E8 010E				     call FrmtdPrint
+    122	01BD  83 C4 08				     add SP, 4 * 2
+    123
+    124	01C0  07			     @@Exit: pop ES
+    125	01C1  1F				     pop DS
+    126	01C2  5F				     pop DI
+    127	01C3  5E				     pop SI
+    128	01C4  5A				     pop DX
+    129	01C5  59				     pop CX
+    130	01C6  5B				     pop BX
+    131	01C7  58				     pop AX
+    132
+    133	01C8  5D				     pop BP
+    134	01C9  FB				     sti
+    135	01CA  2E: FF 2E	01D1r			     jmp     CS:[PrvInt]
+    136	01CF					     endp
+    137
+    138	01CF  FACE		     InstFl	     dw	0FACEh
+    139	01D1  00000000		     PrvInt	     dd	0
+    140	01D5  41 58 3D 30 30 30	30+  TableAXFrmt     db	'AX=0000$'
+    141	      24
+    142	01DD  42 58 3D 30 30 30	30+  TableBXFrmt     db	'BX=0000$'
+    143	      24
+    144	01E5  43 58 3D 30 30 30	30+  TableCXFrmt     db	'CX=0000$'
+    145	      24
+    146	01ED  44 58 3D 30 30 30	30+  TableDXFrmt     db	'DX=0000$'
+    147	      24
+    148	01F5  53 49 3D 30 30 30	30+  TableSIFrmt     db	'SI=0000$'
+    149	      24
+    150	01FD  44 49 3D 30 30 30	30+  TableDIFrmt     db	'DI=0000$'
+    151	      24
+    152	0205  53 50 3D 30 30 30	30+  TableSPFrmt     db	'SP=0000$'
+    153	      24
+    154	020D  42 50 3D 30 30 30	30+  TableBPFrmt     db	'BP=0000$'
+    155	      24
+    156	0215  43 53 3D 30 30 30	30+  TableCSFrmt     db	'CS=0000$'
+    157	      24
+    158	021D  53 53 3D 30 30 30	30+  TableSSFrmt     db	'SS=0000$'
+    159	      24
+    160	0225  44 53 3D 30 30 30	30+  TableDSFrmt     db	'DS=0000$'
+    161	      24
+    162	022D  45 53 3D 30 30 30	30+  TableESFrmt     db	'ES=0000$'
+    163	      24
+    164	0235  49 50 3D 30 30 30	30   TableIPFrmt     db	'IP=0000'
+    165
+    166				     ;-------------------------------------------------------
+    167				     ;Stores hexadecimal representation	of a word into the string of length 4
+    168				     ;Enters:  DX - The	word to	be represented
+    169				     ;Expects: DF set to 1
+    170				     ;	       The lowest digit	of representation must be stored from ES:[DI]
+    171				     ;Returns: None
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 4
+resid.asm
+
+
+
+    172				     ;Destroys:	AL, CL,	DX, DI
+    173
+    174	023C			     StoreHex	     proc
+    175	023C  B1 04				     mov CL, 4
+    176	023E  8A C2				     mov AL, DL
+    177	0240  24 0F				     and AL, 0Fh
+    178	0242  3C 09				     cmp AL, 9
+    179	0244  76 05				     jbe @@Dec0
+    180	0246  04 37				     add AL, 'A' - 0Ah
+    181	0248  EB 03 90				     jmp @@Beg1
+    182
+    183	024B  04 30			     @@Dec0: add AL, '0'
+    184
+    185	024D  AA			     @@Beg1: stosb
+    186	024E  D3 EA				     shr DX, CL
+    187	0250  8A C2				     mov AL, DL
+    188	0252  24 0F				     and AL, 0Fh
+    189	0254  3C 09				     cmp AL, 9
+    190	0256  76 05				     jbe @@Dec1
+    191	0258  04 37				     add AL, 'A' - 0Ah
+    192	025A  EB 03 90				     jmp @@Beg2
+    193
+    194	025D  04 30			     @@Dec1: add AL, '0'
+    195
+    196	025F  AA			     @@Beg2: stosb
+    197	0260  D3 EA				     shr DX, CL
+    198	0262  8A C2				     mov AL, DL
+    199	0264  24 0F				     and AL, 0Fh
+    200	0266  3C 09				     cmp AL, 9
+    201	0268  76 05				     jbe @@Dec2
+    202	026A  04 37				     add AL, 'A' - 0Ah
+    203	026C  EB 03 90				     jmp @@Beg3
+    204
+    205	026F  04 30			     @@Dec2: add AL, '0'
+    206
+    207	0271  AA			     @@Beg3: stosb
+    208	0272  D3 EA				     shr DX, CL
+    209	0274  8A C2				     mov AL, DL
+    210	0276  24 0F				     and AL, 0Fh
+    211	0278  3C 09				     cmp AL, 9
+    212	027A  76 05				     jbe @@Dec3
+    213	027C  04 37				     add AL, 'A' - 0Ah
+    214	027E  EB 03 90				     jmp @@Exit
+    215
+    216	0281  04 30			     @@Dec3: add AL, '0'
+    217
+    218	0283  AA			     @@Exit: stosb
+    219	0284  C3				     ret
+    220	0285					     endp
+    221
+    222				     ;-------------------------------------------------------
+    223				     ;Calculates the offset from the beginning of a line to centering a	string
+    224				     ;Enters:  CX - Length of the string
+    225				     ;	       DX - Length of the line
+    226				     ;Expects: None
+    227				     ;Returns: BX - Offset
+    228				     ;Destroys:	None
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 5
+resid.asm
+
+
+
+    229
+    230	0285			     LnOffset	     proc
+    231	0285  8B DA				     mov BX, DX
+    232	0287  3B CB				     cmp CX, BX
+    233	0289  76 05				     jbe @@L1
+    234	028B  33 DB				     xor BX, BX
+    235	028D  EB 03 90				     jmp @@L2
+    236	0290  2B D9			     @@L1:   sub BX, CX
+    237	0292  D1 EB			     @@L2:   shr BX, 1
+    238	0294  C3				     ret
+    239	0295					     endp
+    240
+    241				     ;-------------------------------------------------------
+    242				     ;Prints line of frame symbols, multiplying	the middle symbol several times
+    243				     ;Enters:  AH - Color of the frame
+    244				     ;	       CX - Length of the middle part
+    245				     ;	       [SP + 2]	- Left frame symbol
+    246				     ;	       [SP + 3]	- Middle frame symbol
+    247				     ;	       [SP + 4]	- Right	frame symbol
+    248				     ;Expects: DF set to 0
+    249				     ;	       Line must be stored from	ES:[DI]
+    250				     ;Destroys:	AL, CX,	DI
+    251
+    252	0295			     PrintFrmLn	     proc
+    253	0295  55				     push BP
+    254	0296  8B EC				     mov BP, SP
+    255
+    256	0298  8A 46 04				     mov AL, [BP + 4]
+    257	029B  AB				     stosw
+    258
+    259	029C  8A 46 05				     mov AL, [BP + 5]
+    260	029F  F3> AB				     rep stosw
+    261
+    262	02A1  8A 46 06				     mov AL, [BP + 6]
+    263	02A4  AB				     stosw
+    264
+    265	02A5  5D				     pop BP
+    266	02A6  C3				     ret
+    267	02A7					     endp
+    268
+    269				     ;-------------------------------------------------------
+    270				     ;Prints text line with frame symbols on the edges
+    271				     ;Enters  AH - Color of the	frame and the text
+    272				     ;	      CX - Text	length
+    273				     ;	      DX - Frame line length
+    274				     ;	      [SP + 2] - Left frame symbol
+    275				     ;	      [SP + 3] - Right frame symbol
+    276				     ;Expects: DF set to 0
+    277				     ;	       Text begins from	DS:[SI]
+    278				     ;	       Line must be stored from	ES:[DI]
+    279				     ;Returns: None
+    280				     ;Destroys:	AL, BX,	CX, DX,	SI, DI
+    281
+    282	02A7			     PrintFrmTxt     proc
+    283	02A7  55				     push BP
+    284	02A8  8B EC				     mov BP, SP
+    285
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 6
+resid.asm
+
+
+
+    286	02AA  3B CA				     cmp CX, DX
+    287	02AC  76 02				     jbe @@L1
+    288	02AE  8B CA				     mov CX, DX
+    289
+    290	02B0  8A 46 04			     @@L1:   mov AL, [BP + 4]
+    291	02B3  AB				     stosw
+    292
+    293	02B4  E8 FFCE				     call LnOffset
+    294	02B7  57				     push DI
+    295	02B8  D1 E3				     shl BX, 1
+    296	02BA  03 FB				     add DI, BX
+    297	02BC  AC			     @@L2:   lodsb
+    298	02BD  AB				     stosw
+    299	02BE  E2 FC				     loop @@L2
+    300	02C0  5F				     pop DI
+    301
+    302	02C1  D1 E2				     shl DX, 1
+    303	02C3  03 FA				     add DI, DX
+    304	02C5  8A 46 05				     mov AL, [BP + 5]
+    305	02C8  AB				     stosw
+    306
+    307	02C9  5D				     pop BP
+    308	02CA  C3				     ret
+    309	02CB					     endp
+    310
+    311				     ;-------------------------------------------------------
+    312				     ;Prints a formated	string to VMemory with a frame
+    313				     ;Enters:  AH - Color of the frame
+    314				     ;	       CX - Length of the string
+    315				     ;	       [SP + 2]	- Left-top frame symbol
+    316				     ;	       [SP + 3]	- Middle-top frame symbol
+    317				     ;	       [SP + 4]	- Right-top frame symbol
+    318				     ;	       [SP + 5]	- Middle-left frame symbol
+    319				     ;	       [SP + 6]	- Middle-right frame symbol
+    320				     ;	       [SP + 7]	- Left-bottom frame symbol
+    321				     ;	       [SP + 8]	- Middle-left frame symbol
+    322				     ;	       [SP + 9]	- Right-bottom frame symbol
+    323				     ;Expects: DF set to 0
+    324				     ;	       The string begins at DS:[SI]
+    325				     ;	       Line with top corner begins at ES:[DI]
+    326				     ;Returns: None
+    327				     ;Destroys:	AL, BX,	DX
+    328
+    329	02CB			     FrmtdPrint	     proc
+    330	02CB  55				     push BP
+    331	02CC  8B EC				     mov BP, SP
+    332
+    333	02CE  51				     push CX
+    334	02CF  57				     push DI
+    335	02D0  06				     push ES
+    336
+    337	02D1  B0 24				     mov AL, '$'
+    338	02D3  8B FE				     mov DI, SI
+    339	02D5  1E				     push DS
+    340	02D6  07				     pop ES
+    341	02D7  33 D2				     xor DX, DX
+    342	02D9  8B D9			     @@L1:   mov BX, CX
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 7
+resid.asm
+
+
+
+    343	02DB  F2> AE				     repne scasb
+    344	02DD  2B D9				     sub BX, CX
+    345	02DF  83 F9 00				     cmp CX, 0
+    346	02E2  74 01				     je	@@L2
+    347	02E4  4B				     dec BX
+    348	02E5  3B D3			     @@L2:   cmp DX, BX
+    349	02E7  73 02				     jae @@L3
+    350	02E9  8B D3				     mov DX, BX
+    351	02EB  83 F9 00			     @@L3:   cmp CX, 0
+    352	02EE  75 E9				     jne @@L1
+    353
+    354	02F0  8B CA				     mov CX, DX
+    355	02F2  83 C1 02				     add CX, 2
+    356	02F5  52				     push DX
+    357	02F6  BA 0050				     mov DX, ScrW
+    358	02F9  E8 FF89				     call LnOffset
+    359	02FC  5A				     pop DX
+    360	02FD  D1 E3				     shl BX, 1
+    361	02FF  01 5E FC				     add word ptr [BP -	4], BX
+    362
+    363	0302  8B 7E FC				     mov DI, [BP - 4]
+    364	0305  8E 46 FA				     mov ES, [BP - 6]
+    365	0308  8B CA				     mov CX, DX
+    366	030A  FF 76 06				     push [BP +	6]
+    367	030D  FF 76 04				     push [BP +	4]
+    368	0310  E8 FF82				     call PrintFrmLn
+    369	0313  83 C4 04				     add SP, 2 * 2
+    370	0316  81 46 FC 00A0			     add word ptr [BP -	4], 2 *	ScrW
+    371
+    372	031B  B0 24				     mov AL, '$'
+    373	031D  8B FE				     mov DI, SI
+    374	031F  1E				     push DS
+    375	0320  07				     pop ES
+    376	0321  8B 4E FE				     mov CX, [BP - 2]
+    377	0324  8B D9			     @@L4:   mov BX, CX
+    378	0326  F2> AE				     repne scasb
+    379	0328  2B D9				     sub BX, CX
+    380	032A  83 F9 00				     cmp CX, 0
+    381	032D  74 01				     je	@@L5
+    382	032F  4B				     dec BX
+    383	0330  57			     @@L5:   push DI
+    384	0331  06				     push ES
+    385	0332  8B 7E FC				     mov DI, [BP - 4]
+    386	0335  8E 46 FA				     mov ES, [BP - 6]
+    387	0338  50				     push AX
+    388	0339  51				     push CX
+    389	033A  8B CB				     mov CX, BX
+    390	033C  52				     push DX
+    391	033D  FF 76 07				     push [BP +	7]
+    392	0340  E8 FF64				     call PrintFrmTxt
+    393	0343  83 C4 02				     add SP, 1 * 2
+    394	0346  5A				     pop DX
+    395	0347  59				     pop CX
+    396	0348  58				     pop AX
+    397	0349  07				     pop ES
+    398	034A  5F				     pop DI
+    399	034B  81 46 FC 00A0			     add word ptr [BP -	4], 2 *	ScrW
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 8
+resid.asm
+
+
+
+    400	0350  46				     inc SI
+    401	0351  83 F9 00				     cmp CX, 0
+    402	0354  75 CE				     jne @@L4
+    403
+    404	0356  8B 7E FC				     mov DI, [BP - 4]
+    405	0359  8E 46 FA				     mov ES, [BP - 6]
+    406	035C  8B CA				     mov CX, DX
+    407	035E  FF 76 0B				     push [BP +	11d]
+    408	0361  FF 76 09				     push [BP +	9]
+    409	0364  E8 FF2E				     call PrintFrmLn
+    410	0367  83 C4 04				     add SP, 2 * 2
+    411
+    412	036A  83 C4 06				     add SP, 3 * 2
+    413	036D  5D				     pop BP
+    414	036E  C3				     ret
+    415	036F					     endp
+    416
+    417				     ;-------------------------------------------------------
+    418	036F			     Init	     proc
+    419	036F  B8 3509				     mov AX, 3509h
+    420	0372  CD 21				     int 21h
+    421	0374  2E: 89 1E	01D1r			     mov word ptr CS:[PrvInt + 0], BX
+    422	0379  2E: 8C 06	01D3r			     mov word ptr CS:[PrvInt + 2], ES
+    423
+    424	037E  26: 81 3E	01CFr FACE		     cmp word ptr ES:[InstFl], 0FACEh
+    425	0385  74 14				     je	@@Exit
+    426
+    427	0387  BA 0103r				     mov DX, offset NewInt
+    428	038A  B8 2509				     mov AX, 2509h
+    429	038D  CD 21				     int 21h
+    430
+    431	038F  BA 037Er				     mov DX, offset Init + 15
+    432	0392  B1 04				     mov CL, 4
+    433	0394  D3 EA				     shr DX, CL
+    434	0396  B8 3100				     mov AX, 3100h
+    435	0399  CD 21				     int 21h
+    436
+    437	039B  B8 4C00			     @@Exit: mov AX, 4C00h
+    438	039E  CD 21				     int 21h
+    439	03A0					     endp
+    440
+    441				     end Start
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 9
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "03/05/26"
+??FILENAME			  Text	 "resid	  "
+??TIME				  Text	 "05:38:04"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@BEG1				  Near	 DGROUP:024D
+@@BEG2				  Near	 DGROUP:025F
+@@BEG3				  Near	 DGROUP:0271
+@@DEC0				  Near	 DGROUP:024B
+@@DEC1				  Near	 DGROUP:025D
+@@DEC2				  Near	 DGROUP:026F
+@@DEC3				  Near	 DGROUP:0281
+@@EXIT				  Near	 DGROUP:01C0
+@@EXIT				  Near	 DGROUP:0283
+@@EXIT				  Near	 DGROUP:039B
+@@L1				  Near	 DGROUP:0290
+@@L1				  Near	 DGROUP:02B0
+@@L1				  Near	 DGROUP:02D9
+@@L2				  Near	 DGROUP:0292
+@@L2				  Near	 DGROUP:02BC
+@@L2				  Near	 DGROUP:02E5
+@@L3				  Near	 DGROUP:02EB
+@@L4				  Near	 DGROUP:0324
+@@L5				  Near	 DGROUP:0330
+@@SKIP				  Near	 DGROUP:011E
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 RESID
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+COLOR				  Number 000A
+FLN				  Number 0005
+FRMTDPRINT			  Near	 DGROUP:02CB
+HFRM				  Number 00CD
+INIT				  Near	 DGROUP:036F
+INSTFL				  Word	 DGROUP:01CF
+LBFRM				  Number 00C8
+LNOFFSET			  Near	 DGROUP:0285
+LTFRM				  Number 00C9
+NEWINT				  Near	 DGROUP:0103
+PRINTFRMLN			  Near	 DGROUP:0295
+PRINTFRMTXT			  Near	 DGROUP:02A7
+PRVINT				  Dword	 DGROUP:01D1
+RBFRM				  Number 00BC
+RTFRM				  Number 00BB
+SCNCODE				  Number 0036
+SCRW				  Number 0050
+START				  Near	 DGROUP:0100
+Turbo Assembler	 Version 4.1	    03/05/26 05:38:05	    Page 10
+Symbol Table
+
+
+
+STOREHEX			  Near	 DGROUP:023C
+TABLEAXFRMT			  Byte	 DGROUP:01D5
+TABLEBPFRMT			  Byte	 DGROUP:020D
+TABLEBXFRMT			  Byte	 DGROUP:01DD
+TABLECSFRMT			  Byte	 DGROUP:0215
+TABLECXFRMT			  Byte	 DGROUP:01E5
+TABLEDIFRMT			  Byte	 DGROUP:01FD
+TABLEDSFRMT			  Byte	 DGROUP:0225
+TABLEDXFRMT			  Byte	 DGROUP:01ED
+TABLEESFRMT			  Byte	 DGROUP:022D
+TABLEIPFRMT			  Byte	 DGROUP:0235
+TABLESIFRMT			  Byte	 DGROUP:01F5
+TABLESPFRMT			  Byte	 DGROUP:0205
+TABLESSFRMT			  Byte	 DGROUP:021D
+VFRM				  Number 00BA
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  03A0 Word	  Public  CODE
+

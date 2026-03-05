@@ -1,0 +1,166 @@
+Turbo Assembler	 Version 4.1	    03/05/26 14:21:34	    Page 1
+test.asm
+
+
+
+      1	0000			     .model tiny
+      2
+      3	0000			     .code
+      4				     locals @@
+      5				     org 100h
+      6
+      7	      =	0Dh, 0Ah	     CRLF	     equ 0Dh, 0Ah
+      8
+      9	0100  B8 1136		     Start:	     mov AX, 1136h
+     10	0103  BB 2222				     mov BX, 2222h
+     11	0106  B9 3333				     mov CX, 3333h
+     12	0109  BA 4444				     mov DX, 4444h
+     13	010C  BE 5555				     mov SI, 5555h
+     14	010F  BF 6666				     mov DI, 6666h
+     15	0112  BD 7777				     mov BP, 7777h
+     16	0115  8E D8				     mov DS, AX
+     17	0117  8E C3				     mov ES, BX
+     18	0119  CD 09				     int 09h
+     19
+     20	011B  E8 0000				     call $ + 3
+     21	011E  5A				     pop DX
+     22	011F  83 EA 03				     sub DX, 3
+     23	0122  FD				     std
+     24	0123  8C C8				     mov AX, CS
+     25	0125  8E D8				     mov DS, AX
+     26	0127  8E C0				     mov ES, AX
+     27	0129  BF 0159r				     mov DI, offset TestMsg + 6d
+     28	012C  E8 0049				     call StoreHex
+     29
+     30	012F  8C CA				     mov DX, CS
+     31	0131  BF 0162r				     mov DI, offset TestMsg + 15d
+     32	0134  E8 0041				     call StoreHex
+     33
+     34	0137  8B D4				     mov DX, SP
+     35	0139  BF 016Br				     mov DI, offset TestMsg + 24d
+     36	013C  E8 0039				     call StoreHex
+     37
+     38	013F  8C D2				     mov DX, SS
+     39	0141  BF 0174r				     mov DI, offset TestMsg + 33d
+     40	0144  E8 0031				     call StoreHex
+     41
+     42	0147  B4 09				     mov AH, 09h
+     43	0149  BA 0153r				     mov DX, offset TestMsg
+     44	014C  CD 21				     int 21h
+     45
+     46	014E  B8 4C00			     @@Exit: mov AX, 4C00h
+     47	0151  CD 21				     int 21h
+     48
+     49	0153  49 50 3D 30 30 30	30+  TestMsg	     db	'IP=0000', CRLF, 'CS=0000', CRLF, 'SP=0000', CRLF, 'SS=0000', CRLF, '$'
+     50	      0D 0A 43 53 3D 30	30+
+     51	      30 30 0D 0A 53 50	3D+
+     52	      30 30 30 30 0D 0A	53+
+     53	      53 3D 30 30 30 30	0D+
+     54	      0A 24
+     55
+     56				     ;-------------------------------------------------------
+     57				     ;Stores hexadecimal representation	of a word into the string of length 4
+Turbo Assembler	 Version 4.1	    03/05/26 14:21:34	    Page 2
+test.asm
+
+
+
+     58				     ;Enters:  DX - The	word to	be represented
+     59				     ;Expects: DF set to 1
+     60				     ;	       The lowest digit	of representation must be stored from ES:[DI]
+     61				     ;Returns: None
+     62				     ;Destroys:	AL, CL,	DX, DI
+     63
+     64	0178			     StoreHex	     proc
+     65	0178  B1 04				     mov CL, 4
+     66	017A  8A C2				     mov AL, DL
+     67	017C  24 0F				     and AL, 0Fh
+     68	017E  3C 09				     cmp AL, 9
+     69	0180  76 05				     jbe @@Dec0
+     70	0182  04 37				     add AL, 'A' - 0Ah
+     71	0184  EB 03 90				     jmp @@Beg1
+     72
+     73	0187  04 30			     @@Dec0: add AL, '0'
+     74
+     75	0189  AA			     @@Beg1: stosb
+     76	018A  D3 EA				     shr DX, CL
+     77	018C  8A C2				     mov AL, DL
+     78	018E  24 0F				     and AL, 0Fh
+     79	0190  3C 09				     cmp AL, 9
+     80	0192  76 05				     jbe @@Dec1
+     81	0194  04 37				     add AL, 'A' - 0Ah
+     82	0196  EB 03 90				     jmp @@Beg2
+     83
+     84	0199  04 30			     @@Dec1: add AL, '0'
+     85
+     86	019B  AA			     @@Beg2: stosb
+     87	019C  D3 EA				     shr DX, CL
+     88	019E  8A C2				     mov AL, DL
+     89	01A0  24 0F				     and AL, 0Fh
+     90	01A2  3C 09				     cmp AL, 9
+     91	01A4  76 05				     jbe @@Dec2
+     92	01A6  04 37				     add AL, 'A' - 0Ah
+     93	01A8  EB 03 90				     jmp @@Beg3
+     94
+     95	01AB  04 30			     @@Dec2: add AL, '0'
+     96
+     97	01AD  AA			     @@Beg3: stosb
+     98	01AE  D3 EA				     shr DX, CL
+     99	01B0  8A C2				     mov AL, DL
+    100	01B2  24 0F				     and AL, 0Fh
+    101	01B4  3C 09				     cmp AL, 9
+    102	01B6  76 05				     jbe @@Dec3
+    103	01B8  04 37				     add AL, 'A' - 0Ah
+    104	01BA  EB 03 90				     jmp @@Exit
+    105
+    106	01BD  04 30			     @@Dec3: add AL, '0'
+    107
+    108	01BF  AA			     @@Exit: stosb
+    109	01C0  C3				     ret
+    110	01C1					     endp
+    111
+    112				     end Start
+Turbo Assembler	 Version 4.1	    03/05/26 14:21:34	    Page 3
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "03/05/26"
+??FILENAME			  Text	 "test	  "
+??TIME				  Text	 "14:21:34"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@@BEG1				  Near	 DGROUP:0189
+@@BEG2				  Near	 DGROUP:019B
+@@BEG3				  Near	 DGROUP:01AD
+@@DEC0				  Near	 DGROUP:0187
+@@DEC1				  Near	 DGROUP:0199
+@@DEC2				  Near	 DGROUP:01AB
+@@DEC3				  Near	 DGROUP:01BD
+@@EXIT				  Near	 DGROUP:014E
+@@EXIT				  Near	 DGROUP:01BF
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0101H
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 TEST
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+CRLF				  Text	 0Dh, 0Ah
+START				  Near	 DGROUP:0100
+STOREHEX			  Near	 DGROUP:0178
+TESTMSG				  Byte	 DGROUP:0153
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  01C1 Word	  Public  CODE
+
