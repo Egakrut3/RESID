@@ -106,7 +106,16 @@ NewInt		proc
 		mov BX, 0B800h
 		mov ES, BX
 		cld
-		mov DH, RBFrm
+		cmp CS:[FrmMode], 0FFh
+		je @@Dflt
+		mov DL, CS:[FrmMode]
+		mov DH, CS:[FrmMode]
+		push DX
+		push DX
+		push DX
+		push DX
+		jmp @@Prnt
+	@@Dflt:	mov DH, RBFrm
 		mov DL, HFrm
 		push DX
 		mov DH, LBFrm
@@ -118,7 +127,7 @@ NewInt		proc
 		mov DH, HFrm
 		mov DL, LTFrm
 		push DX
-		call FrmtdPrint
+	@@Prnt:	call FrmtdPrint
 		add SP, 4 * 2
 
 	@@Exit:	pop ES
@@ -150,6 +159,7 @@ TableSSFrmt	db 'SS=0000$'
 TableDSFrmt	db 'DS=0000$'
 TableESFrmt	db 'ES=0000$'
 TableIPFrmt	db 'IP=0000'
+FrmMode		db 0FFh
 
 ;-------------------------------------------------------
 ;Stores hexadecimal representation of a word into the string of length 4
@@ -403,19 +413,33 @@ FrmtdPrint	proc
 		endp
 
 ;-------------------------------------------------------
+Canary		equ 0FACEh
+
 Init		proc
 		mov AX, 3509h
 		int 21h
 		mov word ptr CS:[PrvInt + 0], BX
 		mov word ptr CS:[PrvInt + 2], ES
 
-		cmp word ptr ES:[InstFl], 0FACEh
+		cmp word ptr ES:[InstFl], Canary
 		je @@Exit
+
+
+		mov SI, 80h
+		push CS
+		pop DS
+		lodsb
+		xor AH, AH
+		mov CX, AX
+		cld
+		call ParseCmd
+		mov [FrmMode], AL
 
 		mov DX, offset NewInt
 		mov AX, 2509h
 		int 21h
 
+		mov [InstFl], Canary
 		mov DX, offset Init + 15
 		mov CL, 4
 		shr DX, CL
@@ -424,6 +448,70 @@ Init		proc
 
 	@@Exit:	mov AX, 4C00h
 		int 21h
+		endp
+
+;-------------------------------------------------------
+;Parses a string as command-line arguments
+;Enters:  CX - Length of the string
+;Expects: The beginning	of the string at DS:[SI]
+;Returns: AL - Equals FFh if default frame must be provided,
+;	  else contains frame symbol (0 if no frame)
+;	  CX - Number of unparsed symbols
+;	  DS:[SI] - The first unparsed symbol
+;Destroys: BX
+
+ChkInd		macro
+		cmp CX, 0
+		je @@End
+		endm
+MovInd		macro
+		dec CX
+		inc SI
+		endm
+
+ParseCmd	proc
+		mov AL, 0FFh
+		mov BX, SI
+
+		ChkInd
+		cmp byte ptr [SI], ' '
+		jne @@End
+		MovInd
+		mov BX, SI
+
+	@@Opt:	ChkInd
+		cmp byte ptr [SI], '/'
+		jne @@End
+		MovInd
+
+		ChkInd
+		cmp byte ptr [SI], 'f'
+		jne @@L1
+		MovInd
+		ChkInd
+		cmp byte ptr [SI], '='
+		jne @@End
+		MovInd
+		ChkInd
+		mov AL, [SI]
+		jmp @@Nxt
+
+	@@L1:	cmp byte ptr [SI], 'n'
+		jne @@End
+		MovInd
+		ChkInd
+		cmp byte ptr [SI], 'o'
+		jne @@End
+		mov AL, 0
+
+	@@Nxt:	MovInd
+		mov BX, SI
+		jmp @@Opt
+
+	@@End:	sub SI, BX
+		add CX, SI
+		mov SI, BX
+		ret
 		endp
 
 end Start
