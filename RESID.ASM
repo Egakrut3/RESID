@@ -25,14 +25,7 @@ NewInt		proc
 		push BP
 		mov BP, SP
 
-		push AX
-		push BX
-		push CX
-		push DX
-		push SI
-		push DI
-		push DS
-		push ES
+		push AX BX CX DX SI DI DS ES
 
 		mov AX, CS
 		mov DS, AX
@@ -40,8 +33,6 @@ NewInt		proc
 
 		in AL, 60h
 		cmp AL, ScnCode
-		je @@Skip
-		cmp [BP - 2], 1111h
 		je @@Skip
 		jmp @@Exit
 
@@ -111,10 +102,7 @@ NewInt		proc
 		je @@Dflt
 		mov DL, CS:[FrmMode]
 		mov DH, CS:[FrmMode]
-		push DX
-		push DX
-		push DX
-		push DX
+		push DX DX DX DX
 		jmp @@Prnt
 	@@Dflt:	mov DH, RBFrm
 		mov DL, HFrm
@@ -131,14 +119,7 @@ NewInt		proc
 	@@Prnt:	call FrmtdPrint
 		add SP, 4 * 2
 
-	@@Exit:	pop ES
-		pop DS
-		pop DI
-		pop SI
-		pop DX
-		pop CX
-		pop BX
-		pop AX
+	@@Exit:	pop ES DS DI SI DX CX BX AX
 
 		pop BP
 		sti
@@ -302,9 +283,7 @@ FrmtdPrint	proc
 		push BP
 		mov BP, SP
 
-		push CX
-		push DI
-		push ES
+		push CX DI ES
 
 		mov AL, '$'
 		mov DI, SI
@@ -352,22 +331,14 @@ FrmtdPrint	proc
 		cmp CX, 0
 		je @@L5
 		dec BX
-	@@L5:	push DI
-		push ES
+	@@L5:	push AX CX DX DI ES
+		mov CX, BX
 		mov DI, [BP - 4]
 		mov ES, [BP - 6]
-		push AX
-		push CX
-		mov CX, BX
-		push DX
 		push [BP + 7]
 		call PrintFrmTxt
 		add SP, 1 * 2
-		pop DX
-		pop CX
-		pop AX
-		pop ES
-		pop DI
+		pop ES DI DX CX AX
 		add word ptr [BP - 4], 2 * ScrW
 		inc SI
 		cmp CX, 0
