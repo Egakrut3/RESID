@@ -170,51 +170,24 @@ FrmMode		db 0FFh
 ;Returns: None
 ;Destroys: AL, CL, DX, DI
 
+StoreDig	macro
+		mov SI, DX
+		and SI, 0Fh
+		mov AL, CS:[HexDigits + SI]
+		stosb
+		shr DX, CL
+		endm
+
+HexDigits	db '0123456789ABCDEF'
+
 StoreHex	proc
 		mov CL, 4
-		mov AL, DL
-		and AL, 0Fh
-		cmp AL, 9
-		jbe @@Dec0
-		add AL, 'A' - 0Ah
-		jmp @@Beg1
 
-	@@Dec0:	add AL, '0'
-
-	@@Beg1:	stosb
-		shr DX, CL
-		mov AL, DL
-		and AL, 0Fh
-		cmp AL, 9
-		jbe @@Dec1
-		add AL, 'A' - 0Ah
-		jmp @@Beg2
-
-	@@Dec1:	add AL, '0'
-
-	@@Beg2:	stosb
-		shr DX, CL
-		mov AL, DL
-		and AL, 0Fh
-		cmp AL, 9
-		jbe @@Dec2
-		add AL, 'A' - 0Ah
-		jmp @@Beg3
-
-	@@Dec2:	add AL, '0'
-
-	@@Beg3:	stosb
-		shr DX, CL
-		mov AL, DL
-		and AL, 0Fh
-		cmp AL, 9
-		jbe @@Dec3
-		add AL, 'A' - 0Ah
-		jmp @@Exit
-
-	@@Dec3:	add AL, '0'
-
-	@@Exit:	stosb
+		StoreDig
+		StoreDig
+		StoreDig
+		StoreDig
+		
 		ret
 		endp
 		

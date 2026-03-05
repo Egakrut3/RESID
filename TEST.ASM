@@ -6,26 +6,11 @@ org 100h
 
 CRLF		equ 0Dh, 0Ah
 
-Start:		mov AX, 1111h
-		mov BX, 2222h
-		mov CX, 3333h
-		mov DX, 4444h
-		mov SI, 5555h
-		mov DI, 6666h
-		mov BP, 7777h
-		mov DS, AX
-		mov ES, BX
-		int 09h
-
-		call $ + 3
-		pop DX
-		sub DX, 3
+Start:	
 		std
 		mov AX, CS
 		mov DS, AX
 		mov ES, AX
-		mov DI, offset TestMsg + 6d
-		call StoreHex
 
 		mov DX, CS
 		mov DI, offset TestMsg + 15d
@@ -43,7 +28,24 @@ Start:		mov AX, 1111h
 		mov DX, offset TestMsg
 		int 21h
 
-	@@Exit:	mov AX, 4C00h
+		mov AX, 1111h
+		mov BX, 2222h
+		mov CX, 3333h
+		mov DX, 4444h
+		mov SI, 5555h
+		mov DI, 6666h
+		mov BP, 7777h
+		mov DS, AX
+		mov ES, BX
+		push 1000h
+		pop SS
+		org 8888h
+
+	@@L1:	in AL, 60h
+		cmp AL, 01h
+		jne @@L1
+
+		mov AX, 4C00h
 		int 21h
 
 TestMsg		db 'IP=0000', CRLF, 'CS=0000', CRLF, 'SP=0000', CRLF, 'SS=0000', CRLF, '$'
