@@ -8,10 +8,17 @@ Start:
 		jmp Init
 
 ;-------------------------------------------------------
-ScnCode		equ 36h				;RShift
 ScrW		equ 80d
+
+ScnCode		equ 36h
 FLn		equ 5
 Color		equ 00001010b			;Light green
+HFrm		equ 0CDh			;Õ
+VFrm		equ 0BAh			;∫	…Õª
+LTFrm		equ 0C9h			;…	∫ ∫
+RTFrm		equ 0BBh			;ª	»Õº
+LBFrm		equ 0C8h			;»
+RBFrm		equ 0BCh			;º
 
 NewInt		proc
 		cli
@@ -64,7 +71,7 @@ NewInt		proc
 		call StoreHex
 
 		mov DX, SP
-		add DX, 2 * 12d				;SP differs by 12
+		add DX, 2 * 12d				;SP differs by 12 words
 		mov DI, offset TableSPFrmt + 6		;from the correct one now
 		call StoreHex
 
@@ -92,7 +99,6 @@ NewInt		proc
 		mov DI, offset TableIPFrmt + 6
 		call StoreHex
 
-		mov AL, 0FFh
 		mov AH, Color
 		mov CX, 8 * 13d - 1
 		mov SI, offset TableAXFrmt
@@ -100,7 +106,20 @@ NewInt		proc
 		mov BX, 0B800h
 		mov ES, BX
 		cld
+		mov DH, RBFrm
+		mov DL, HFrm
+		push DX
+		mov DH, LBFrm
+		mov DL, VFrm
+		push DX
+		mov DH, VFrm
+		mov DL, RTFrm
+		push DX
+		mov DH, HFrm
+		mov DL, LTFrm
+		push DX
 		call FrmtdPrint
+		add SP, 4 * 2
 
 	@@Exit:	pop ES
 		pop DS
@@ -113,9 +132,10 @@ NewInt		proc
 
 		pop BP
 		sti
-		jmp dword ptr CS:[PrvInt]
+		jmp 	CS:[PrvInt]
 		endp
 
+InstFl		dw 0FACEh
 PrvInt		dd 0
 TableAXFrmt	db 'AX=0000$'
 TableBXFrmt	db 'BX=0000$'
@@ -211,8 +231,8 @@ LnOffset	proc
 ;Enters:  AH - Color of the frame
 ;	  CX - Length of the middle part
 ;	  [SP + 2] - Left frame symbol
-;	  [SP + 4] - Middle frame symbol
-;	  [SP + 6] - Right frame symbol
+;	  [SP + 3] - Middle frame symbol
+;	  [SP + 4] - Right frame symbol
 ;Expects: DF set to 0
 ;	  Line must be stored from ES:[DI]
 ;Destroys: AL, CX, DI
@@ -224,10 +244,10 @@ PrintFrmLn	proc
 		mov AL, [BP + 4]
 		stosw
 
-		mov AL, [BP + 6]
+		mov AL, [BP + 5]
 		rep stosw
 
-		mov AL, [BP + 8]
+		mov AL, [BP + 6]
 		stosw
 
 		pop BP
@@ -240,7 +260,7 @@ PrintFrmLn	proc
 ;	 CX - Text length
 ;	 DX - Frame line length
 ;	 [SP + 2] - Left frame symbol
-;	 [SP + 4] - Right frame symbol
+;	 [SP + 3] - Right frame symbol
 ;Expects: DF set to 0
 ;	  Text begins from DS:[SI]
 ;	  Line must be stored from ES:[DI]
@@ -269,7 +289,7 @@ PrintFrmTxt	proc
 
 		shl DX, 1
 		add DI, DX
-		mov AL, [BP + 6]
+		mov AL, [BP + 5]
 		stosw
 
 		pop BP
@@ -278,27 +298,26 @@ PrintFrmTxt	proc
 
 ;-------------------------------------------------------
 ;Prints a formated string to VMemory with a frame
-;Enters:  AL - Equals 0 if no frame must be provided, FFh if default frame
-;	  must be provided, else contains ASCII-code of the frame symbol
-;	  AH - Color of the frame
+;Enters:  AH - Color of the frame
 ;	  CX - Length of the string
+;	  [SP + 2] - Left-top frame symbol
+;	  [SP + 3] - Middle-top frame symbol
+;	  [SP + 4] - Right-top frame symbol
+;	  [SP + 5] - Middle-left frame symbol
+;	  [SP + 6] - Middle-right frame symbol
+;	  [SP + 7] - Left-bottom frame symbol
+;	  [SP + 8] - Middle-left frame symbol
+;	  [SP + 9] - Right-bottom frame symbol
 ;Expects: DF set to 0
 ;	  The string begins at DS:[SI]
 ;	  Line with top corner begins at ES:[DI]
 ;Returns: None
-;Destroys: BX
-
-HFrm		equ 0CDh
-VFrm		equ 0BAh
-LTFrm		equ 0C9h
-RTFrm		equ 0BBh
-LBFrm		equ 0C8h
-RBFrm		equ 0BCh
+;Destroys: AL, BX, DX
 
 FrmtdPrint	proc
 		push BP
 		mov BP, SP
-		push AX
+
 		push CX
 		push DI
 		push ES
@@ -327,23 +346,22 @@ FrmtdPrint	proc
 		call LnOffset
 		pop DX
 		shl BX, 1
-		add word ptr [BP - 6], BX
+		add word ptr [BP - 4], BX
 
-		mov DI, [BP - 6]
-		mov ES, [BP - 8]
+		mov DI, [BP - 4]
+		mov ES, [BP - 6]
 		mov CX, DX
-		push RTFrm
-		push HFrm
-		push LTFrm
+		push [BP + 6]
+		push [BP + 4]
 		call PrintFrmLn
-		add SP, 3 * 2
-		add word ptr [BP - 6], 2 * ScrW
+		add SP, 2 * 2
+		add word ptr [BP - 4], 2 * ScrW
 
 		mov AL, '$'
 		mov DI, SI
 		push DS
 		pop ES
-		mov CX, [BP - 4]
+		mov CX, [BP - 2]
 	@@L4:	mov BX, CX
 		repne scasb
 		sub BX, CX
@@ -352,47 +370,47 @@ FrmtdPrint	proc
 		dec BX
 	@@L5:	push DI
 		push ES
-		mov DI, [BP - 6]
-		mov ES, [BP - 8]
+		mov DI, [BP - 4]
+		mov ES, [BP - 6]
 		push AX
 		push CX
-		push DX
 		mov CX, BX
-		push VFrm
-		push VFrm
+		push DX
+		push [BP + 7]
 		call PrintFrmTxt
-		add SP, 2 * 2
+		add SP, 1 * 2
 		pop DX
 		pop CX
 		pop AX
 		pop ES
 		pop DI
-		add word ptr [BP - 6], 2 * ScrW
+		add word ptr [BP - 4], 2 * ScrW
 		inc SI
 		cmp CX, 0
 		jne @@L4
 
-		mov DI, [BP - 6]
-		mov ES, [BP - 8]
+		mov DI, [BP - 4]
+		mov ES, [BP - 6]
 		mov CX, DX
-		push RBFrm
-		push HFrm
-		push LBFrm
+		push [BP + 11d]
+		push [BP + 9]
 		call PrintFrmLn
-		add SP, 3 * 2
+		add SP, 2 * 2
 
-		add SP, 4 * 2
+		add SP, 3 * 2
 		pop BP
 		ret
 		endp
 
 ;-------------------------------------------------------
-Init:		cld
-
+Init		proc
 		mov AX, 3509h
 		int 21h
 		mov word ptr CS:[PrvInt + 0], BX
 		mov word ptr CS:[PrvInt + 2], ES
+
+		cmp word ptr ES:[InstFl], 0FACEh
+		je @@Exit
 
 		mov DX, offset NewInt
 		mov AX, 2509h
@@ -403,5 +421,9 @@ Init:		cld
 		shr DX, CL
 		mov AX, 3100h
 		int 21h
+
+	@@Exit:	mov AX, 4C00h
+		int 21h
+		endp
 
 end Start
