@@ -6,7 +6,7 @@ org 100h
 
 CRLF		equ 0Dh, 0Ah
 
-Start:		mov AX, 1136h
+Start:		mov AX, 1111h
 		mov BX, 2222h
 		mov CX, 3333h
 		mov DX, 4444h

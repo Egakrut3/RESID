@@ -40,7 +40,8 @@ NewInt		proc
 
 		in AL, 60h
 		cmp AL, ScnCode
-		;cmp [BP - 2], 1111h
+		je @@Skip
+		cmp [BP - 2], 1111h
 		je @@Skip
 		jmp @@Exit
 
